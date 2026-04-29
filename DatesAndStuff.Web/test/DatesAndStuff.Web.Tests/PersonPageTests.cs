@@ -123,6 +123,39 @@ public class PersonPageTests
         var salaryAfterSubmission = double.Parse(salaryLabel.Text);
         salaryAfterSubmission.Should().BeApproximately(expectedSalary, 0.001);
     }
+
+    [TestCase(-11)]
+    [TestCase(-50)]
+    [TestCase(-48)]
+    [TestCase(-45)]
+    public void Person_SalaryIncrease_ShouldShowError_WhenPercentageLessThanMinus10(double percentage)
+    {
+        // Arrange
+        driver.Navigate().GoToUrl(BaseURL);
+        driver.FindElement(By.XPath("//*[@data-test='PersonPageNavigation']")).Click();
+
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
+
+        var input = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']")));
+        input.Clear();
+        input.SendKeys(percentage.ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        // Act
+        var submitButton = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']")));
+        submitButton.Click();
+
+        // Assert
+        var firstErrorLi = wait.Until(ExpectedConditions.ElementIsVisible(By.XPath("//ul[@class='validation-errors']/li")));
+        firstErrorLi.Text.Should().Be("The specified percentag should be between -10 and infinity.");
+
+        var fieldError = wait.Until(ExpectedConditions.ElementIsVisible(By.XPath("//div[@class='validation-message']")));
+        fieldError.Text.Should().Be("The specified percentag should be between -10 and infinity.");
+
+        var salaryLabel = driver.FindElement(By.XPath("//*[@data-test='DisplayedSalary']"));
+        var salary = double.Parse(salaryLabel.Text);
+        salary.Should().Be(5000d);
+    }
+
     private bool IsElementPresent(By by)
     {
         try
