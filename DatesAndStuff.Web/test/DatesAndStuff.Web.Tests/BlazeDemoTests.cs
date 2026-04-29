@@ -1,0 +1,88 @@
+﻿using System;
+using System.Text;
+using FluentAssertions;
+using NUnit.Framework;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Support.UI;
+
+namespace DatesAndStuff.Web.Tests;
+
+[TestFixture]
+public class BlazeDemoTests
+{
+    private IWebDriver driver;
+    private const string BaseURL = "https://blazedemo.com";
+
+    [SetUp]
+    public void SetupTest()
+    {
+        driver = new ChromeDriver();
+        driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(5);
+        driver.Manage().Window.Maximize();
+    }
+
+    [TearDown]
+    public void TeardownTest()
+    {
+        try
+        {
+            driver.Quit();
+            driver.Dispose();
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    [TestCase(400)]
+    public void FlightSearch_MexicoCityToDublin_Alternative(double maxPrice)
+    {
+        driver.Navigate().GoToUrl(BaseURL);
+
+        var fromPort = driver.FindElement(By.Name("fromPort"));
+
+        fromPort.FindElement(By.XPath("//option[@value='Mexico City']")).Click();
+
+        var toPort = driver.FindElement(By.Name("toPort"));
+        toPort.FindElement(By.XPath("//option[@value='Dublin']")).Click();
+
+        driver.FindElement(By.CssSelector("input[type='submit']")).Click();
+
+        var flightRows = driver.FindElements(By.XPath("//table[@class='table']/tbody/tr"));
+        flightRows.Count.Should().BeGreaterThanOrEqualTo(3);
+
+        // Bónusz
+        bool found = false;
+
+        foreach (var row in flightRows)
+        {
+            var priceText = row.FindElement(By.XPath("./td[6]")).Text.Replace("$", "").Trim();
+
+            if (double.TryParse(priceText, out double price))
+            {
+                if (price < maxPrice)
+                {
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (found)
+        {
+            TakeScreenshot("Flight.png");
+        }
+    }
+
+    private void TakeScreenshot(string fileName)
+    {
+        ITakesScreenshot screenshotDriver = (ITakesScreenshot) driver;
+        Screenshot screenshot = screenshotDriver.GetScreenshot();
+
+        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        string filePath = Path.Combine(desktopPath, fileName);
+
+        screenshot.SaveAsFile(filePath);
+    }
+}
