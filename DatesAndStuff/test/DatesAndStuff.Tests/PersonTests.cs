@@ -52,7 +52,7 @@ public class PersonTests
         try { task.Wait(); } catch { }
 
         // Assert
-        Assert.IsTrue(task.IsFaulted);
+        (task.IsFaulted).Should().Be(true);
     }
 
     [Test]
