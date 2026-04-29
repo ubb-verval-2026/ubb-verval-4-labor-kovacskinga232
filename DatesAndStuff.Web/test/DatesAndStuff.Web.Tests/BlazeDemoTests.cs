@@ -35,8 +35,8 @@ public class BlazeDemoTests
         }
     }
 
-    [Test]
-    public void FlightSearch_MexicoCityToDublin_Alternative()
+    [TestCase(400)]
+    public void FlightSearch_MexicoCityToDublin_Alternative(double maxPrice)
     {
         driver.Navigate().GoToUrl(BaseURL);
 
@@ -51,5 +51,38 @@ public class BlazeDemoTests
 
         var flightRows = driver.FindElements(By.XPath("//table[@class='table']/tbody/tr"));
         flightRows.Count.Should().BeGreaterThanOrEqualTo(3);
+
+        // Bónusz
+        bool found = false;
+
+        foreach (var row in flightRows)
+        {
+            var priceText = row.FindElement(By.XPath("./td[6]")).Text.Replace("$", "").Trim();
+
+            if (double.TryParse(priceText, out double price))
+            {
+                if (price < maxPrice)
+                {
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (found)
+        {
+            TakeScreenshot("Flight.png");
+        }
+    }
+
+    private void TakeScreenshot(string fileName)
+    {
+        ITakesScreenshot screenshotDriver = (ITakesScreenshot) driver;
+        Screenshot screenshot = screenshotDriver.GetScreenshot();
+
+        string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        string filePath = Path.Combine(desktopPath, fileName);
+
+        screenshot.SaveAsFile(filePath);
     }
 }
